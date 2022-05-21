@@ -26,7 +26,7 @@ class Plugin(indigo.PluginBase):
 	def __init__(self, pluginId, pluginDisplayName, pluginVersion, pluginPrefs):
 		super(Plugin, self).__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
 		self.debug = pluginPrefs.get("showDebugInfo", False)
-		self.debug = True
+		#self.debug = True
 
 	def startup(self):
 		self.parseDB(valuesDict=None)
@@ -59,7 +59,7 @@ class Plugin(indigo.PluginBase):
 
 		#indigo.server.log("cp {} {}".format(liveDBNameExt,tempDBNameExt))
 		#os.system('cp {} {}'.format(liveDBNameExt,tempDBNameExt))
-		indigo.server.log("shutil.copy({},{})".format(tempDBPathNameExt,tempDBPathNameExt))
+		#indigo.server.log("shutil.copy({},{})".format(tempDBPathNameExt,tempDBPathNameExt))
 		shutil.copy("{}".format(liveDBPathNameExt),"{}".format(tempDBPathNameExt))
 
 		file_exists = os.path.exists("{}".format(tempDBPathNameExt))
