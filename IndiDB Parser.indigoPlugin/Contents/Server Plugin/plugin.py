@@ -25,7 +25,7 @@ class Plugin(indigo.PluginBase):
 	def startup(self):
 		self.parseDB(valuesDict=None)
 
-	def parseDB(self, valuesDict):
+	def parseDB(self, valuesDict=None):
 		self.debugLog("Finding Indigo DB")
 
 		liveDB = indigo.server.getDbFilePath()
@@ -40,7 +40,7 @@ class Plugin(indigo.PluginBase):
 		os.system('cp {} {}'.format(liveDBName,tempDBName))
 
 		self.debugLog("Reading Indigo DB into XML")
-		with open(tempDBName, 'r', encoding='utf-8') as file:
+		with open(liveDBName, 'r', encoding='utf-8') as file:
 			xml = file.read()
 
 		self.debugLog("Converting to Dictionary")
