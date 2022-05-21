@@ -42,12 +42,15 @@ class Plugin(indigo.PluginBase):
 
 		liveDBPath = liveDB.replace("{}.indiDb".format(indigo.server.getDbName()),"")
 
+		liveDBPathNameExt = "{}{}".format(liveDBPath,liveDBNameExt)
+		tempDBPathNameExt = "{}{}".format(liveDBPath,tempDBNameExt)
+
+		logOutputPath = "{}/Logs/com.howartp.indidbparser".format(indigo.server.getInstallFolderPath())
+
 		#indigo.server.log("liveDBName: {}".format(liveDBName))
 		#indigo.server.log("liveDBFile: {}".format(str(indigo.server.getDbFilePath())))
-		#indigo.server.log("liveDBPath: {}".format(str(liveDBPath)))
 
 		#indigo.server.log("getCWD: {}".format(os.getcwd()))
-		os.chdir("{}".format(liveDBPath)) #Might not be the getInstallFolderPath()!
 		#indigo.server.log("getCWD: {}".format(os.getcwd()))
 
 ###############################################################################################
@@ -56,18 +59,18 @@ class Plugin(indigo.PluginBase):
 
 		#indigo.server.log("cp {} {}".format(liveDBNameExt,tempDBNameExt))
 		#os.system('cp {} {}'.format(liveDBNameExt,tempDBNameExt))
-		#indigo.server.log("shutil.copy({},{})".format(liveDBNameExt,tempDBNameExt))
-		shutil.copy(liveDBNameExt,tempDBNameExt)
+		indigo.server.log("shutil.copy({},{})".format(tempDBPathNameExt,tempDBPathNameExt))
+		shutil.copy("{}".format(liveDBPathNameExt),"{}".format(tempDBPathNameExt))
 
-		file_exists = os.path.exists(tempDBNameExt)
+		file_exists = os.path.exists("{}".format(tempDBPathNameExt))
 		if (file_exists):
-			self.debugLog("File {} found - continuing".format(tempDBNameExt))
+			self.debugLog("File {} found - continuing".format(tempDBPathNameExt))
 		else:
-			self.errorLog("File {} not found - cannot continue".format(tempDBNameExt))
+			self.errorLog("File {} not found - cannot continue".format(tempDBPathNameExt))
 			return
 
 		self.debugLog("Reading Indigo DB into XML")
-		with open(tempDBNameExt, 'r', encoding='utf-8') as file:
+		with open(tempDBPathNameExt, 'r', encoding='utf-8') as file:
 			xml = file.read()
 
 		self.debugLog("Converting to Dictionary")
@@ -125,7 +128,7 @@ class Plugin(indigo.PluginBase):
 							out["actions"][actionID][pluginID] = []
 						out["actions"][actionID][pluginID].append(pluginAction)
 
-###############################################################################################
+################################################################################################
 
 		self.debugLog("Parsing Indigo Devices")
 		for d in db['DeviceList']['Device']:		#Loop through Indigo Devices in DB
@@ -148,49 +151,54 @@ class Plugin(indigo.PluginBase):
 				else:
 					deviceType = "[Unidentified]"
 
-				deviceDesc = "{}  [Type: {}]".format(deviceName,localDevices[int(deviceID)].model)
+				deviceDesc = "{}  [Types: {}]".format(deviceName,localDevices[int(deviceID)].model)
+				#self.debugLog(deviceDesc)
 
 				#self.debugLog(out["plugins"])
 				#Build $Plugins
 				if pluginID not in out["plugins"]:
 					out["plugins"][pluginID] = {}
-				out["plugins"][pluginID]["devices"] = {}
-				if actionID not in out["plugins"][pluginID]["devices"]:
-					out["plugins"][pluginID]["devices"][deviceID] = []
-				out["plugins"][pluginID]["devices"][deviceID].append(deviceDesc)
+				if "devices" not in out["plugins"][pluginID]:
+					out["plugins"][pluginID]["devices"] = {}
+				#if deviceID not in out["plugins"][pluginID]["devices"]:
+					#out["plugins"][pluginID]["devices"][deviceID] = ""
+				out["plugins"][pluginID]["devices"][deviceID] = deviceDesc
 
 				#Build $Devices
-				if deviceID not in out["devices"]:
-					out["devices"][deviceID] = {}
-				if pluginID not in out["devices"][deviceID]:
-					out["devices"][deviceID][pluginID] = []
-				out["devices"][deviceID][pluginID].append(deviceDesc)
-
-
+				if "com.perceptiveautomation" not in pluginID:
+					if deviceID not in out["devices"]:
+						out["devices"][deviceID] = {}
+					out["devices"][deviceID][pluginID] = ""
 
 		doOut = True
-		doOut = False
+		#doOut = False
 		if (doOut):
 
 			self.debugLog("Building output for txt files")
-			#Set output to Log folder
-			os.chdir("{}/Logs/com.howartp.indidbparser".format(indigo.server.getInstallFolderPath()))
+			##Set output to Log folder
+			##os.chdir("{}/Logs/com.howartp.indidbparser".format(indigo.server.getInstallFolderPath()))
 
 			outPluginLines = []
 
 			for pID in out["plugins"]:
 				outPluginLines.append("Plugin: {}\n".format(pID))
-				outPluginLines.append("|------Actions:\n")
-				if ("actions" in ["plugins"][pID]):
+				if ("devices" in out["plugins"][pID]):
+					outPluginLines.append("|------Devices:\n")
+					for dID in out["plugins"][pID]["devices"]:
+						deviceDesc = "{}  [Type: {}]".format(localDevices[int(dID)].name,localDevices[int(dID)].model)
+						outPluginLines.append("|------|------{}\n".format(deviceDesc))
+				if ("actions" in out["plugins"][pID]):
+					outPluginLines.append("|------Actions:\n")
 					for aID in out["plugins"][pID]["actions"]:
 						outPluginLines.append("|------|------{} [{}]\n".format(indigo.actionGroups[int(aID)].name,aID))
 						for step in out["plugins"][pID]["actions"][aID]:
 							outPluginLines.append("|------|------|------{}\n".format(step))
-				if ("devices" in ["plugins"][pID]):
-					for dDesc in out["plugins"][pID]["devices"]:
-						outPluginLines.append("|------|------{}\n".format(dDesc))
 
-			with open('Plugins.txt','w') as f:
+
+			outputFile = "{}/plugins.txt".format(logOutputPath)
+			self.debugLog(outputFile)
+
+			with open(outputFile,'w', encoding="utf-8") as f:
 				f.write(''.join(outPluginLines))
 
 			indigo.server.log("Plugin file output to:  {}/Logs/com.howartp.indidbparser/Plugins.txt".format(indigo.server.getInstallFolderPath()))
@@ -198,37 +206,50 @@ class Plugin(indigo.PluginBase):
 			outActionLines = []
 
 			for aID in out["actions"]:
-				outActionLines.append("Action: {}\n\r".format(indigo.actionGroups[int(aID)].name))
+				outActionLines.append("Action: {}\n".format(indigo.actionGroups[int(aID)].name))
 				for pID in out["actions"][aID]:
-					outActionLines.append("|------{}\n\r".format(pID))
+					outActionLines.append("|------{}\n".format(pID))
 					for step in out["actions"][aID][pID]:
-						outActionLines.append("|------|------{}\n\r".format(step))
+						outActionLines.append("|------|------{}\n".format(step))
 
-			with open('Actions.txt','w') as f:
+			outputFile = "{}/Actions.txt".format(logOutputPath)
+			with open(outputFile,'w', encoding="utf-8") as f:
 				f.write(''.join(outActionLines))
 
-			indigo.server.log("Actions file output to:  {}/Logs/com.howartp.indidbparser/Plugins.txt".format(indigo.server.getInstallFolderPath()))
+			indigo.server.log("Actions file output to:  {}/Logs/com.howartp.indidbparser/Actions.txt".format(indigo.server.getInstallFolderPath()))
 
+			outDeviceLines = []
+
+			for dID in out["devices"]:
+				outDeviceLines.append("Device: {}\n".format(localDevices[int(dID)].name))
+				for pID in out["devices"][dID]:
+					outDeviceLines.append("|------{}\n".format(pID))
+
+			outputFile = "{}/Devices.txt".format(logOutputPath)
+			with open(outputFile,'w', encoding="utf-8") as f:
+				f.write(''.join(outDeviceLines))
+
+			indigo.server.log("Devices file output to:  {}".format(outputFile))
 
 			indigo.server.log("Use menu item \"Plugins > IndiDB Parser > Parse DB\" to refresh files.")
 
 
 
 
-
-
-
-
-
-
-
-
-
-		#STUFF FOR LATER
-
-		actions = indigo.actionGroups	# "Get the actions"
-
-		#for a in actions:
-			#indigo.server.log(a.name)
-
-
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#		#STUFF FOR LATER
+#
+#		actions = indigo.actionGroups	# "Get the actions"
+#
+#		#for a in actions:
+#			#indigo.server.log(a.name)
+#
+#
