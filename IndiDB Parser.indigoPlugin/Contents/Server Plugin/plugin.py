@@ -7,6 +7,11 @@
 import indigo
 
 import os
+import os.path
+
+
+import shutil
+
 import base64
 
 import xmltodict
@@ -36,16 +41,27 @@ class Plugin(indigo.PluginBase):
 
 		liveDBPath = liveDB.replace("{}.indiDb".format(indigo.server.getDbName()),"")
 
-		indigo.server.log("liveDBName: {}".format(liveDBName))
-		indigo.server.log("liveDBFile: {}".format(str(indigo.server.getDbFilePath())))
-		indigo.server.log("liveDBPath: {}".format(str(liveDBPath)))
+		#indigo.server.log("liveDBName: {}".format(liveDBName))
+		#indigo.server.log("liveDBFile: {}".format(str(indigo.server.getDbFilePath())))
+		#indigo.server.log("liveDBPath: {}".format(str(liveDBPath)))
 
-		indigo.server.log("getCWD: {}".format(os.getcwd()))
+		#indigo.server.log("getCWD: {}".format(os.getcwd()))
 		os.chdir("{}".format(liveDBPath)) #Might not be the getInstallFolderPath()!
-		indigo.server.log("getCWD: {}".format(os.getcwd()))
+		#indigo.server.log("getCWD: {}".format(os.getcwd()))
 		self.debugLog("Copying Indigo DB for safety")
 
+		indigo.server.log("cp {} {}".format(liveDBNameExt,tempDBNameExt))
 		os.system('cp {} {}'.format(liveDBNameExt,tempDBNameExt))
+
+		indigo.server.log("shutil.copy({},{})".format(liveDBNameExt,tempDBNameExt))
+		shutil.copy(liveDBNameExt,tempDBNameExt)
+
+		file_exists = os.path.exists(tempDBNameExt)
+		if (file_exists):
+			self.debugLog("File {} found - continuing".format(tempDBNameExt))
+		else:
+			self.errorLog("File {} not found - cannot continue".format(tempDBNameExt))
+			return
 
 		self.debugLog("Reading Indigo DB into XML")
 		with open(tempDBNameExt, 'r', encoding='utf-8') as file:
