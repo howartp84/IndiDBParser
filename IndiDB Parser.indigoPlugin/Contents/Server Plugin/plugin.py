@@ -30,24 +30,32 @@ class Plugin(indigo.PluginBase):
 
 		liveDB = indigo.server.getDbFilePath()
 		tempDB = (indigo.server.getDbFilePath()).replace(".indiDb","_Parser.indiDb")
-		liveDBName = "{}.indiDb".format(indigo.server.getDbName())
-		tempDBName = liveDBName.replace(".indiDb","_Parser.indiDb")
+		liveDBName = indigo.server.getDbName()
+		liveDBNameExt = "{}.indiDb".format(liveDBName)
+		tempDBNameExt = liveDBNameExt.replace(".indiDb","_Parser.indiDb")
 
-		#indigo.server.log(os.getcwd())
-		os.chdir("{}/Databases".format(indigo.server.getInstallFolderPath()))
-		#indigo.server.log(os.getcwd())
+		liveDBPath = liveDB.replace("{}.indiDb".format(indigo.server.getDbName()),"")
+
+		indigo.server.log("liveDBName: {}".format(liveDBName))
+		indigo.server.log("liveDBFile: {}".format(str(indigo.server.getDbFilePath())))
+		indigo.server.log("liveDBPath: {}".format(str(liveDBPath)))
+
+		indigo.server.log("getCWD: {}".format(os.getcwd()))
+		os.chdir("{}".format(liveDBPath)) #Might not be the getInstallFolderPath()!
+		indigo.server.log("getCWD: {}".format(os.getcwd()))
 		self.debugLog("Copying Indigo DB for safety")
-		os.system('cp {} {}'.format(liveDBName,tempDBName))
+
+		os.system('cp {} {}'.format(liveDBNameExt,tempDBNameExt))
 
 		self.debugLog("Reading Indigo DB into XML")
-		with open(liveDBName, 'r', encoding='utf-8') as file:
+		with open(tempDBNameExt, 'r', encoding='utf-8') as file:
 			xml = file.read()
 
 		self.debugLog("Converting to Dictionary")
 		fulldict = xmltodict.parse(xml)
 		db = fulldict['Database'] 		#Start at the root
 
-		self.debugLog("Imported {} as XML".format(tempDBName))
+		self.debugLog("Imported {} as XML".format(tempDBNameExt))
 
 		#localActions = indigo.actionGroups	# "Get the actions"
 		localDevices = indigo.devices # "Get the actions"
@@ -179,4 +187,5 @@ class Plugin(indigo.PluginBase):
 
 		#for a in actions:
 			#indigo.server.log(a.name)
+
 
